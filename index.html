@@ -105,6 +105,9 @@ aside.on{transform:none}
 .cat i{overflow:hidden}.cat img{width:100%;height:100%;object-fit:cover;display:block}
 .slide .heroart{overflow:hidden;position:relative}.slide .heroart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%}
 .it img{display:block}
+.fab{display:none;position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));min-width:56px;height:56px;padding:0 .9rem;border-radius:28px;border:0;background:var(--cta);color:#fff;font:inherit;font-size:1.05rem;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:30;cursor:pointer;touch-action:manipulation}
+.fab.pop{animation:pop .4s}@keyframes pop{50%{transform:scale(1.25)}}
+@media(max-width:800px){.fab{display:flex;align-items:center;justify-content:center;gap:.3rem}.toast{bottom:calc(5rem + env(safe-area-inset-bottom,0px));max-width:90vw;text-align:center}}
 </style>
 </head>
 <body>
@@ -153,6 +156,7 @@ aside.on{transform:none}
 <div class="items" id="items"></div>
 <div class="tot"><span>Total</span><span id="total">₹0</span></div>
 <button class="btn cta" id="checkout">Checkout</button></aside>
+<button type="button" class="fab" id="fab" aria-label="Open cart">🛍 <span id="cnt2">0</span></button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -199,22 +203,23 @@ $("tabs").innerHTML=["All","Saree","Blouse"].map(function(t){return '<button cla
 function render(){
  document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("on",b.dataset.f===filter)});
  var L=P.filter(function(p){return filter==="All"||p.t===filter});
- $("grid").innerHTML=L.length?L.map(function(p){var i=P.indexOf(p);return '<div class="card"><div class="sw">'+(p.b?'<span class="badge">'+p.b+'</span>':'')+'<img src="'+IMG[p.im]+'" alt="'+p.n+' '+p.t.toLowerCase()+'" loading="lazy" style="object-position:'+(p.pos||'center 22%')+'"><button class="add" data-i="'+i+'">Add to cart</button></div><h3>'+p.n+'</h3><small>'+p.t+(p.t==="Saree"?" with blouse piece":"")+'</small><div class="price">'+fmt(p.p)+(p.o?'<s>'+fmt(p.o)+'</s>':'')+'</div></div>'}).join(""):'<p class="empty">Nothing here yet — check back soon.</p>';
+ $("grid").innerHTML=L.length?L.map(function(p){var i=P.indexOf(p);return '<div class="card"><div class="sw">'+(p.b?'<span class="badge">'+p.b+'</span>':'')+'<img src="'+IMG[p.im]+'" alt="'+p.n+' '+p.t.toLowerCase()+'" loading="lazy" style="object-position:'+(p.pos||'center 22%')+'"><button type="button" class="add" onclick="addToCart('+i+')">Add to cart</button></div><h3>'+p.n+'</h3><small>'+p.t+(p.t==="Saree"?" with blouse piece":"")+'</small><div class="price">'+fmt(p.p)+(p.o?'<s>'+fmt(p.o)+'</s>':'')+'</div></div>'}).join(""):'<p class="empty">Nothing here yet — check back soon.</p>';
 }
 function drawCart(){
  var k=Object.keys(cart),n=0,t=0;
  $("items").innerHTML=k.length?k.map(function(i){var p=P[i],q=cart[i];n+=q;t+=q*p.p;return '<div class="it"><i><img src="'+IMG[p.im]+'" alt="" style="width:100%;height:100%;object-fit:cover"></i><div><b style="font-weight:500">'+p.n+'</b><br>'+fmt(p.p)+'<div class="q"><button data-m="'+i+'" aria-label="Less">−</button>'+q+'<button data-pl="'+i+'" aria-label="More">+</button></div></div></div>'}).join(""):'<p class="empty">Your cart is empty</p>';
- $("cnt").textContent=n;$("total").textContent=fmt(t);
+ $("cnt").textContent=n;$("cnt2").textContent=n;$("total").textContent=fmt(t);
 }
 function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(function(){t.classList.remove("on")},1800)}
-function open(o){$("cart").classList.toggle("on",o);$("ov").classList.toggle("on",o)}
+function toggleCart(o){$("cart").classList.toggle("on",o);$("ov").classList.toggle("on",o)}
+function addToCart(i){cart[i]=(cart[i]||0)+1;drawCart();toast(P[i].n+" added to cart");var f=$("fab");f.classList.remove("pop");void f.offsetWidth;f.classList.add("pop");if(window.innerWidth<=800)setTimeout(function(){toggleCart(true)},350)}
 document.addEventListener("click",function(e){
  var a=e.target.closest("[data-f]");if(a){filter=a.dataset.f;render()}
- var b=e.target.closest(".add");if(b){cart[b.dataset.i]=(cart[b.dataset.i]||0)+1;drawCart();toast("Added to cart")}
+ 
  var m=e.target.closest("[data-m]");if(m){var i=m.dataset.m;if(--cart[i]<=0)delete cart[i];drawCart()}
  var pl=e.target.closest("[data-pl]");if(pl){cart[pl.dataset.pl]++;drawCart()}
 });
-$("open").onclick=function(){open(true)};$("close").onclick=$("ov").onclick=function(){open(false)};
+$("open").onclick=$("fab").onclick=function(){toggleCart(true)};$("close").onclick=$("ov").onclick=function(){toggleCart(false)};
 $("checkout").onclick=function(){toast(Object.keys(cart).length?"Demo store — checkout not connected":"Add something first")};
 $("sub").onclick=function(){var v=$("em");toast(/\S+@\S+\.\S+/.test(v.value)?"Thanks for subscribing!":"Enter a valid email");if(/\S+@\S+/.test(v.value))v.value=""};
 var S=[{t:"Woven by hand,<br>worn every day",p:"Handloom sarees, statement blouses and easy separates made with weaver communities across India.",b:"Shop new arrivals",f:"All",im:10,c:"#c9a24a"},{t:"Festive edit,<br>up to 40% off",p:"Banarasi weaves and zari borders for the season ahead.",b:"Shop sarees",f:"Saree",im:8,c:"#4a1f6b"},{t:"Blouses with<br>a back story",p:"Tassels, keyholes and cut-outs that turn any saree around.",b:"Shop blouses",f:"Blouse",im:2,c:"#14504a"},{t:"Puja special<br>red and white",p:"The classic Durga Puja drape, ready for the pandal.",b:"Shop puja sarees",f:"Saree",im:11,c:"#c0242b"}];
